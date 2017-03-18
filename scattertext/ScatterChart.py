@@ -5,7 +5,7 @@ from scipy.stats import rankdata
 from scattertext.PValGetter import get_p_vals
 from scattertext.Scalers import percentile_min, percentile_alphabetical
 from scattertext.TermDocMatrixFilter import filter_bigrams_by_pmis, \
-	filter_out_unigrams_that_only_occur_in_one_bigram
+	filter_out_unigrams_that_only_occur_in_one_bigram, filter_out_all_unigrams
 from scattertext.termranking import AbsoluteFrequencyRanker
 from scattertext.termscoring import ScaledFScore
 from scattertext.termscoring.RudderScore import RudderScore
@@ -208,7 +208,10 @@ class ScatterChart:
 			threshold_coef=self.pmi_threshold_coefficient
 		)
 		if self.filter_unigrams:
-			df = filter_out_unigrams_that_only_occur_in_one_bigram(df)
+			if self.filter_unigrams == 2:
+				df = filter_out_all_unigrams(df)
+			else:
+				df = filter_out_unigrams_that_only_occur_in_one_bigram(df)
 		if len(df) == 0:
 			raise NoWordMeetsTermFrequencyRequirementsError()
 		df['category score rank'] = rankdata(df['category score'], method='ordinal')

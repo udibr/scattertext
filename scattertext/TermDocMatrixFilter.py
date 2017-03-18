@@ -10,6 +10,10 @@ def filter_bigrams_by_pmis(word_freq_df, threshold_coef=2):
 	low_pmi_bigrams = get_low_pmi_bigrams(threshold_coef, word_freq_df)
 	return word_freq_df.drop(low_pmi_bigrams.index)
 
+def filter_out_all_unigrams(df):
+	# type: (pd.DataFrame) -> pd.DataFrame
+	unigrams = {bigram for bigram in df.index if ' ' not in bigram}
+	return df.drop(unigrams)
 
 def filter_out_unigrams_that_only_occur_in_one_bigram(df):
 	# type: (pd.DataFrame) -> pd.DataFrame

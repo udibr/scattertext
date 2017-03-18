@@ -4,10 +4,12 @@ from itertools import chain
 
 class FeatsFromSpacyDoc(object):
 	def __init__(self,
-	             use_lemmas=False,
-	             entity_types_to_censor=set(),
-	             tag_types_to_censor=set(),
-	             strip_final_period=False):
+				 use_lemmas=False,
+				 entity_types_to_censor=set(),
+				 tag_types_to_censor=set(),
+				 strip_final_period=False,
+				 min_ngram_size=1,
+				 max_ngram_size=2):
 		'''
 		Parameters
 		----------
@@ -26,6 +28,8 @@ class FeatsFromSpacyDoc(object):
 		self._entity_types_to_censor = entity_types_to_censor
 		self._tag_types_to_censor = tag_types_to_censor
 		self._strip_final_period = strip_final_period
+		self.min_ngram_size = min_ngram_size
+		self.max_ngram_size = max_ngram_size
 
 	def _post_process_term(self, term):
 		if self._strip_final_period and (term.strip().endswith('.') or term.strip().endswith(',')):
@@ -51,16 +55,23 @@ class FeatsFromSpacyDoc(object):
 			for tok in sent:
 				if tok.pos_ not in ('PUNCT', 'SPACE', 'X'):
 					if tok.ent_type_ in self._entity_types_to_censor:
-						unigrams.append('_'+tok.ent_type_)
+						unigrams.append('_' + tok.ent_type_)
 					elif tok.tag_ in self._tag_types_to_censor:
 						unigrams.append(tok.tag_)
 					elif self._use_lemmas and tok.lemma_.strip():
 						unigrams.append(self._post_process_term(tok.lemma_.strip()))
 					elif tok.lower_.strip():
 						unigrams.append(self._post_process_term(tok.lower_.strip()))
-			if len(unigrams) > 1:
-				bigrams = map(' '.join, zip(unigrams[:-1], unigrams[1:]))
-			else:
-				bigrams = []
-			ngram_counter += Counter(chain(unigrams, bigrams))
+
+			allgrams = [unigrams] if self.min_ngram_size == 1 else []
+			for ngram_size in range(max(2,self.min_ngram_size),
+									self.max_ngram_size+1):
+				if len(unigrams) >= ngram_size:
+					ngrams = [unigrams[i:len(unigrams)-ngram_size+1+i]
+							  for i in range(ngram_size)]
+					ngrams = map(' '.join, zip(*ngrams))
+				else:
+					ngrams = []
+				allgrams.append(ngrams)
+			ngram_counter += Counter(chain(*allgrams))
 		return ngram_counter
